@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Corelyn</title>
+  <link rel="stylesheet" href="style.css"/>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+</head>
+<body>
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="logo">
+        <div class="logo-icon">
+          <img src="./resc/logo.png" alt="Logo" />
+        </div>
+        <span class="logo-text">Corelyn AI</span>
+      </div>
+      <div>
+        <button id="openSettingsBtn" class="settings-btn">⚙️</button>
+        <br>
+        <button class="new-chat-btn" id="newChatBtn" title="New chat">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="sidebar-section-label">Recent</div>
+    <nav class="chat-list" id="chatList">
+      <!-- Dynamically populated -->
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="model-selector" id="modelSelector">
+        <div class="model-dot"></div>
+        <span id="modelLabel"></span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main" id="main">
+    <!-- Top bar -->
+    <header class="topbar">
+      <button class="sidebar-toggle" id="sidebarToggle">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M3 12h18M3 6h18M3 18h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+      <span class="topbar-title" id="topbarTitle">New Conversation</span>
+      <button class="playground-btn" id="playgroundBtn" title="Open Playground">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3m8 0h3a2 2 0 0 0 2-2v-3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><polyline points="9 12 11 14 15 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <button class="clear-btn" id="clearBtn" title="Clear chat">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </header>
+
+    <!-- Messages area -->
+    <div class="messages-container" id="messagesContainer">
+      <div class="welcome-screen" id="welcomeScreen">
+        <div class="welcome-icon">
+          <img src="./resc/logo.png" alt="Logo" />
+        </div>
+        <h1 class="welcome-title">How can I help you today?</h1>
+        <p class="welcome-sub">Ask me anything — I'm powered by Corelyn AI.</p>
+        <div class="suggestion-grid">
+          <button class="suggestion-card" data-prompt="Explain quantum entanglement in simple terms">
+            <span class="suggestion-icon">⚛️</span>
+            <span>Explain quantum entanglement</span>
+          </button>
+          <button class="suggestion-card" data-prompt="Write a Python script to sort a list of dictionaries by a key">
+            <span class="suggestion-icon">🐍</span>
+            <span>Python sorting script</span>
+          </button>
+          <button class="suggestion-card" data-prompt="Give me 5 creative startup ideas for 2025">
+            <span class="suggestion-icon">💡</span>
+            <span>Creative startup ideas</span>
+          </button>
+          <button class="suggestion-card" data-prompt="Write a short poem about the ocean at night">
+            <span class="suggestion-icon">🌊</span>
+            <span>Poem about the ocean</span>
+          </button>
+        </div>
+      </div>
+      <div class="messages" id="messages"></div>
+    </div>
+
+    <!-- Input area -->
+    <div class="input-area">
+      <div class="input-wrapper">
+        <textarea
+          id="userInput"
+          class="user-input"
+          placeholder="Message Corelyn..."
+          rows="1"
+        ></textarea>
+        <button class="send-btn" id="sendBtn" disabled>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+      <p class="input-disclaimer">Corelyn can make mistakes. Verify important information.</p>
+      <button id="openDonateBtn" class="donate-btn">❤️ Donate</button>
+    </div>
+  </main>
+
+  <!-- Settings Modal -->
+  <div class="modal" id="settingsModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Settings</h2>
+        <button class="close-btn" id="closeSettings">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="setting-item">
+          <label for="apiKeyInput">API Key</label>
+          <a href="https://cloud.corelyn.ro/guide">Get an API key</a>
+          <br>
+          <input type="text" id="apiKeyInput" placeholder="Enter API key">
+        </div>
+        <div class="setting-item">
+        <label for="providerSelect">Default Provider</label>
+        <select id="providerSelect">
+          <option value="anthropic">Anthropic</option>
+          <option value="openai">OpenAI</option>
+          <option value="cerebras">Cerebras</option>
+          <option value="corelyn">Corelyn</option>
+        </select>
+      </div>
+
+      <div class="setting-item">
+        <label for="modelSelect">Default Model</label>
+        <select id="modelSelect"></select>
+      </div>
+        <div class="setting-item">
+          <label for="modelSelect">Default Model</label>
+          <datalist id="modelExamples"></datalist>
+        </div>
+        <div class="setting-item">
+          <label for="systemPromptInput">System Prompt</label>
+          <textarea id="systemPromptInput" rows="4" style="resize:vertical;">You are Corelyn, a usefull AI assistant.
+If user asks to generate code, give a actualy working valid code, no AI slop.
+Respond in markdown.</textarea>
+        </div>
+        <div class="setting-item">
+          <label>
+            Triggers
+            <span class="label-hint">(fire actions when AI response matches)</span>
+          </label>
+          <div id="triggerList" class="trigger-list"></div>
+          <button id="addTriggerBtn" class="add-trigger-btn">+ Add Trigger</button>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="saveSettingsBtn">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Playground Modal -->
+  <div class="playground-modal" id="playgroundModal">
+    <div class="playground-inner">
+      <div class="playground-header">
+        <div class="playground-title">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3m8 0h3a2 2 0 0 0 2-2v-3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          Playground
+        </div>
+        <div class="playground-actions">
+          <button class="pg-ai-toggle-btn" id="pgAiToggle" title="Toggle AI Assistant">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 4a1.5 1.5 0 1 1-1.5 1.5A1.5 1.5 0 0 1 12 6zm2 11H10v-1l1-1v-3l-1-1v-1h4v1l-1 1v3l1 1z" fill="currentColor"/></svg>
+            AI Mode
+          </button>
+          <button class="pg-btn" id="pgRunBtn" title="Run (Ctrl+Enter)">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><polygon points="5 3 19 12 5 21 5 3" fill="currentColor"/></svg>
+            Run
+          </button>
+          <button class="pg-btn pg-btn-ghost" id="pgClearBtn" title="Clear all">Clear</button>
+          <button class="pg-btn pg-btn-ghost" id="pgShareBtn" title="Export as HTML file">Export</button>
+          <button class="pg-close-btn" id="playgroundClose">&times;</button>
+        </div>
+      </div>
+
+      <div class="playground-body">
+
+        <!-- AI Chat Panel (hidden by default) -->
+        <div class="pg-ai-panel" id="pgAiPanel">
+          <div class="pg-ai-header">
+            <span class="pg-ai-label">✦ AI Site Builder</span>
+            <button class="pg-ai-clear-btn" id="pgAiClearBtn" title="Clear conversation">Clear</button>
+          </div>
+          <div class="pg-ai-messages" id="pgAiMessages">
+            <div class="pg-ai-welcome">
+              <div class="pg-ai-welcome-icon">✦</div>
+              <p>Describe the website you want to build and I'll generate the HTML, CSS, and JS for you.</p>
+              <div class="pg-ai-suggestions">
+                <button class="pg-ai-suggestion" data-prompt="Build a sleek landing page for a SaaS product with a hero section, features grid, and CTA button">Landing page</button>
+                <button class="pg-ai-suggestion" data-prompt="Create an interactive todo app with add, complete, and delete functionality, dark theme">Todo app</button>
+                <button class="pg-ai-suggestion" data-prompt="Build a personal portfolio page with animated sections, skills bars, and contact form">Portfolio</button>
+                <button class="pg-ai-suggestion" data-prompt="Create a CSS-only animated loading screen with particles and a progress bar">Loading screen</button>
+              </div>
+            </div>
+          </div>
+          <div class="pg-ai-input-area">
+            <textarea class="pg-ai-input" id="pgAiInput" placeholder="Describe your site... (Enter to send)" rows="1"></textarea>
+            <button class="pg-ai-send" id="pgAiSend" disabled>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Editors column -->
+        <div class="pg-editors" id="pgEditors">
+          <div class="pg-pane" id="pgHtmlPane">
+            <div class="pg-pane-label">
+              <span class="pg-lang-dot" style="background:#e34c26"></span>HTML
+              <button class="pg-pane-toggle" data-pane="html">−</button>
+            </div>
+            <textarea class="pg-editor" id="pgHtml" spellcheck="false" placeholder="<!-- HTML here -->"></textarea>
+          </div>
+          <div class="pg-resizer" data-between="html-css"></div>
+          <div class="pg-pane" id="pgCssPane">
+            <div class="pg-pane-label">
+              <span class="pg-lang-dot" style="background:#264de4"></span>CSS
+              <button class="pg-pane-toggle" data-pane="css">−</button>
+            </div>
+            <textarea class="pg-editor" id="pgCss" spellcheck="false" placeholder="/* CSS here */"></textarea>
+          </div>
+          <div class="pg-resizer" data-between="css-js"></div>
+          <div class="pg-pane" id="pgJsPane">
+            <div class="pg-pane-label">
+              <span class="pg-lang-dot" style="background:#f7df1e"></span>JS
+              <button class="pg-pane-toggle" data-pane="js">−</button>
+            </div>
+            <textarea class="pg-editor" id="pgJs" spellcheck="false" placeholder="// JavaScript here"></textarea>
+          </div>
+        </div>
+
+        <!-- Preview column -->
+        <div class="pg-preview-col">
+          <div class="pg-preview-label">
+            <span>Preview</span>
+            <div class="pg-preview-controls">
+              <button class="pg-device-btn active" data-w="100%" title="Full width">⬛</button>
+              <button class="pg-device-btn" data-w="768px" title="Tablet">▬</button>
+              <button class="pg-device-btn" data-w="375px" title="Mobile">▪</button>
+            </div>
+          </div>
+          <div class="pg-preview-wrap">
+            <iframe id="pgPreview" sandbox="allow-scripts allow-modals" title="Preview"></iframe>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Donate Modal -->
+  <div class="modal" id="donateModal">
+    <div class="modal-content">
+      
+      <div class="modal-header">
+        <h2>Support Corelyn ❤️</h2>
+        <button class="close-btn" id="closeDonate">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <p>If you like Corelyn AI, consider supporting development.</p>
+        <p>Donations help us improve the platform</p>
+        <p>Thanks!</p>
+
+        <div class="donate-options">
+          <a href="https://paypal.me/corelynai" target="_blank" class="donate-link">
+            💳 PayPal
+          </a>
+        <label class="dont-show">
+        <br>
+        <input type="checkbox" id="dontShowDonate">
+          Don't show this again
+        </label>
+
+      </div>
+
+    </div>
+  </div>
+
+
+  <script src="app.js"></script>
+</body>
+
+</html>
+
+
