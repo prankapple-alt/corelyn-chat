@@ -192,7 +192,7 @@ const PROVIDERS = {
   anthropic: { name: 'Anthropic', endpoint: 'https://api.anthropic.com/v1/messages' },
   openai: { name: 'OpenAI', endpoint: 'https://api.openai.com/v1/chat/completions' },
   cerebras: { name: 'Cerebras', endpoint: 'https://api.cerebras.ai/v1/chat/completions' },
-  corelyn: { name: 'Corelyn', endpoint: 'https://corelyncloud-backend.onrender.com/chat/completions' }
+  corelyn: { name: 'Corelyn', endpoint: 'https://api.corelyn.ro/chat/completions' }
 };
 
 // ============================
@@ -2151,7 +2151,7 @@ Rules:
 
 (function initLynStore() {
 
-  const BACKEND = 'https://corelyncloud-backend.onrender.com';
+  const BACKEND = 'https://api.corelyn.ro';
   const GOOGLE_CLIENT_ID = '1095022231097-m2jpnjm7fkh0k2kd46hca3p4i8b6v3k0.apps.googleusercontent.com';
 
   let googleCredential = null; // raw ID token from Google
