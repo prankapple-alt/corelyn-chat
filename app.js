@@ -278,6 +278,17 @@ const dontShowDonate = document.getElementById("dontShowDonate");
 
 const modelSelect = document.getElementById("modelSelect");
 
+// ── Corelyn Cloud Auth (Google -> auto-generate API key) ──
+const authModal = $('authModal');
+const closeAuthModalBtn = $('closeAuthModal');
+const authAccountView = $('authAccountView');
+const authLoadingView = $('authLoadingView');
+const authErrorView = $('authErrorView');
+const authErrorText = $('authErrorText');
+const authRetryBtn = $('authRetryBtn');
+const authCloseFromErrorBtn = $('authCloseFromError');
+const authGoogleBtn = $('authGoogleBtn');
+
 const providerModels = {
   corelyn: [
     "nvidia/moonshotai/kimi-k2.5",
@@ -630,16 +641,232 @@ function init() {
   if (state.chats.length > 0) loadChat(state.chats[0].id);
   setupEventListeners();
   updateModelLabel();
-  if (!state.apiKey) promptForKey();
+  if (!state.apiKey) ensureApiKey();
   injectFileUploadUI();
   injectMessageActionStyles();
 }
 
-function promptForKey() {
+function promptForKeyManual() {
   const key = window.prompt('Enter API Key:', '');
   if (key && key.trim()) {
     state.apiKey = key.trim();
     localStorage.setItem('nc_apikey', state.apiKey);
+  }
+}
+
+// ============================
+// Corelyn Cloud Auth Flow
+// ============================
+
+const CORELYN_API_BASE = 'https://api.corelyn.ro';
+const CORELYN_GOOGLE_CLIENT_ID = '1095022231097-m2jpnjm7fkh0k2kd46hca3p4i8b6v3k0.apps.googleusercontent.com';
+const CORELYN_USER_TOKEN_KEY = 'corelyn_user_token';
+
+let apiKeyEnsurePromise = null;
+let apiKeyEnsureResolve = null;
+let googleButtonInitialized = false;
+
+function showAuthView(viewName) {
+  const views = [authAccountView, authLoadingView, authErrorView].filter(Boolean);
+  views.forEach(v => (v.style.display = 'none'));
+
+  if (viewName === 'account' && authAccountView) authAccountView.style.display = '';
+  if (viewName === 'loading' && authLoadingView) authLoadingView.style.display = '';
+  if (viewName === 'error' && authErrorView) authErrorView.style.display = '';
+}
+
+function openAuthModal() {
+  if (!authModal) return;
+  authModal.style.display = 'flex';
+}
+
+function closeAuthModal() {
+  if (!authModal) return;
+  authModal.style.display = 'none';
+}
+
+function resolveApiKeyEnsure(value) {
+  if (!apiKeyEnsureResolve) return;
+  const r = apiKeyEnsureResolve;
+  apiKeyEnsureResolve = null;
+  r(value);
+}
+
+function setStateApiKey(newKey) {
+  state.apiKey = newKey;
+  localStorage.setItem('nc_apikey', state.apiKey);
+  if (apiKeyInput) apiKeyInput.value = state.apiKey;
+  sendBtn.disabled = !inputEl.value.trim();
+}
+
+async function fetchCorelynKeyFromToken(token) {
+  const res = await fetch(`${CORELYN_API_BASE}/get-key`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token })
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data?.error || `Failed to fetch key (${res.status})`);
+  if (data?.error) throw new Error(data.error);
+  if (!data?.key) throw new Error('No key returned from server.');
+  return data.key;
+}
+
+async function handleGoogleLogin(response) {
+  showAuthView('loading');
+
+  try {
+    const credential = response?.credential;
+    if (!credential) throw new Error('Missing Google credential.');
+
+    const res = await fetch(`${CORELYN_API_BASE}/google-login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ credential })
+    });
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data?.error || `Google login failed (${res.status})`);
+    if (data?.error) throw new Error(data.error);
+    if (!data?.token) throw new Error('Server did not return a token.');
+
+    localStorage.setItem(CORELYN_USER_TOKEN_KEY, data.token);
+
+    const apiKey = await fetchCorelynKeyFromToken(data.token);
+    setStateApiKey(apiKey);
+    closeAuthModal();
+    resolveApiKeyEnsure(apiKey);
+  } catch (err) {
+    const msg = err?.message || 'Failed to generate API key.';
+    if (authErrorText) authErrorText.textContent = msg;
+    showAuthView('error');
+  }
+}
+
+function initGoogleAuthButton() {
+  if (googleButtonInitialized) return;
+  if (!authGoogleBtn) return;
+
+  if (!window.google?.accounts?.id) {
+    setTimeout(initGoogleAuthButton, 250);
+    return;
+  }
+
+  window.google.accounts.id.initialize({
+    client_id: CORELYN_GOOGLE_CLIENT_ID,
+    callback: handleGoogleLogin
+  });
+
+  window.google.accounts.id.renderButton(authGoogleBtn, {
+    theme: 'filled_black',
+    size: 'large',
+    text: 'signin_with',
+    shape: 'rectangular'
+  });
+
+  googleButtonInitialized = true;
+}
+
+function openGoogleForApiKey() {
+  if (!authModal) return Promise.resolve(null);
+
+  return new Promise(async (resolve) => {
+    apiKeyEnsureResolve = resolve;
+
+    // Bind close/retry handlers (override, no duplication).
+    if (closeAuthModalBtn) closeAuthModalBtn.onclick = () => { closeAuthModal(); resolveApiKeyEnsure(null); };
+    if (authCloseFromErrorBtn) authCloseFromErrorBtn.onclick = () => { closeAuthModal(); resolveApiKeyEnsure(null); };
+    if (authRetryBtn) {
+      authRetryBtn.onclick = async () => {
+        const token = localStorage.getItem(CORELYN_USER_TOKEN_KEY);
+        if (!token) {
+          showAuthView('account');
+          return;
+        }
+
+        showAuthView('loading');
+        try {
+          const apiKey = await fetchCorelynKeyFromToken(token);
+          setStateApiKey(apiKey);
+          closeAuthModal();
+          resolveApiKeyEnsure(apiKey);
+        } catch (err) {
+          const msg = err?.message || 'Failed to fetch API key.';
+          if (authErrorText) authErrorText.textContent = msg;
+          showAuthView('error');
+        }
+      };
+    }
+
+    openAuthModal();
+    showAuthView('account');
+    initGoogleAuthButton();
+
+    // If user already has a token saved, we can skip the account view.
+    const existingToken = localStorage.getItem(CORELYN_USER_TOKEN_KEY);
+    if (existingToken) {
+      showAuthView('loading');
+      try {
+        const apiKey = await fetchCorelynKeyFromToken(existingToken);
+        setStateApiKey(apiKey);
+        closeAuthModal();
+        resolveApiKeyEnsure(apiKey);
+      } catch (err) {
+        localStorage.removeItem(CORELYN_USER_TOKEN_KEY);
+        const msg = err?.message || 'Token invalid. Please sign in again.';
+        if (authErrorText) authErrorText.textContent = msg;
+        showAuthView('error');
+      }
+    }
+  });
+}
+
+async function ensureApiKey() {
+  if (state.apiKey) return state.apiKey;
+  if (apiKeyEnsurePromise) return apiKeyEnsurePromise;
+
+  apiKeyEnsurePromise = (async () => {
+    // Corelyn-generated keys only work with the Corelyn provider.
+    if (state.provider !== 'corelyn') {
+      state.provider = 'corelyn';
+      localStorage.setItem('nc_provider', state.provider);
+
+      if (providerSelect) {
+        providerSelect.value = 'corelyn';
+        updateModels();
+        if (modelSelect) modelSelect.value = state.model;
+      }
+
+      const corelynModels = providerModels.corelyn || [];
+      const fallbackModel = 'cerebras/llama3.1-8b';
+      if (corelynModels.length && !corelynModels.includes(state.model)) {
+        state.model = corelynModels.includes(fallbackModel) ? fallbackModel : corelynModels[0];
+        localStorage.setItem('nc_model', state.model);
+      }
+
+      updateModelLabel();
+    }
+
+    // Try token-first (same idea as cloud.html, but without the redirect).
+    const token = localStorage.getItem(CORELYN_USER_TOKEN_KEY);
+    if (token) {
+      try {
+        const apiKey = await fetchCorelynKeyFromToken(token);
+        setStateApiKey(apiKey);
+        return apiKey;
+      } catch (err) {
+        localStorage.removeItem(CORELYN_USER_TOKEN_KEY);
+      }
+    }
+
+    return await openGoogleForApiKey();
+  })();
+
+  try {
+    return await apiKeyEnsurePromise;
+  } finally {
+    apiKeyEnsurePromise = null;
   }
 }
 
@@ -716,7 +943,10 @@ function renderChatList() {
 
 async function sendMessage(content) {
   if (!content.trim() || state.streaming) return;
-  if (!state.apiKey) return promptForKey();
+  if (!state.apiKey) {
+    await ensureApiKey();
+    if (!state.apiKey) return;
+  }
 
   if (!state.activeChatId) createChat();
   const chat = getActiveChat(); if (!chat) return;
@@ -1277,7 +1507,7 @@ function setupEventListeners() {
     });
   });
   document.addEventListener('click', () => modelDropdown.classList.remove('open'));
-  modelLabel.addEventListener('dblclick', promptForKey);
+  modelLabel.addEventListener('dblclick', () => ensureApiKey());
 
   document.querySelectorAll('.suggestion-card').forEach(card=>{
     card.onclick=()=>{ const prompt=card.dataset.prompt; inputEl.value=prompt; autoResize(); sendBtn.disabled=false; sendMessage(prompt); };

@@ -158,6 +158,50 @@ Respond in markdown.</textarea>
     </div>
   </div>
 
+  <!-- Auth Modal (Google -> auto-generate API key) -->
+  <div class="modal" id="authModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Get your API key</h2>
+        <button class="close-btn" id="closeAuthModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="auth-view" id="authAccountView">
+          <p style="font-size:13px;color:var(--text-dim);margin-top:4px;">
+            Sign in with Google to generate a free Corelyn API key.
+          </p>
+          <div id="authGoogleBtn"></div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:10px;">
+            You can enter your own key anytime in Settings.
+          </div>
+        </div>
+
+        <div class="auth-view" id="authLoadingView" style="display:none;">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div style="width:10px;height:10px;border-radius:50%;background:var(--accent);box-shadow:0 0 18px rgba(124,106,255,.7);"></div>
+            <div style="font-size:13px;color:var(--text-dim);">Processing…</div>
+          </div>
+        </div>
+
+        <div class="auth-view" id="authErrorView" style="display:none;">
+          <div style="font-size:13px;color:var(--text-dim);">Something went wrong:</div>
+          <div id="authErrorText" style="color:#ff5f5f;font-size:13px;word-break:break-word;margin-top:6px;"></div>
+          <div class="modal-footer" style="justify-content:space-between;margin-top:12px;">
+            <button
+              id="authRetryBtn"
+              style="padding:8px 14px;background:var(--accent);border:none;border-radius:var(--radius-sm);color:#fff;font-size:13px;font-family:var(--font);cursor:pointer;transition:all var(--transition);"
+            >Try again</button>
+            <button
+              class="close-btn"
+              id="authCloseFromError"
+              style="font-size:18px;padding:0 4px;"
+            >&times;</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Playground Modal -->
   <div class="playground-modal" id="playgroundModal">
     <div class="playground-inner">
